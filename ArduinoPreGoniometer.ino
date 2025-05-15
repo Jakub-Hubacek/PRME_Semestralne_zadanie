@@ -2,8 +2,8 @@
 
 // ----- Nastavenie motorov -----
 #define motorInterfaceType 1
-const int dirPinX = 2, stepPinX = 3;
-const int dirPinY = 4, stepPinY = 5;
+const int dirPinY = 2, stepPinY = 3;
+const int dirPinX = 4, stepPinX = 5;
 const int dirPinZ = 6, stepPinZ = 7;
 
 AccelStepper stepperX(motorInterfaceType, stepPinX, dirPinX);
@@ -11,9 +11,14 @@ AccelStepper stepperY(motorInterfaceType, stepPinY, dirPinY);
 AccelStepper stepperZ(motorInterfaceType, stepPinZ, dirPinZ);
 
 // ----- Enkodéry (simulované analógové) -----
-const int encoderPinX = A0;
-const int encoderPinY = A1;
-const int encoderPinZ = A2;
+const int encoderPinZ = A0;
+const int encoderPinX = A1;
+const int encoderPinY = A2;
+
+// ----- Kalibračné offsety enkodérov -----
+const float encoderOffsetX = 292 ;   // <- nastav podľa tvojej domácej polohy
+const float encoderOffsetY = 259;
+const float encoderOffsetZ = 151;
 
 // ----- Konštanty -----
 const float stepsPerRevolution = 200.0; // prispôsobiť tvojmu motoru / prevodovke
@@ -35,9 +40,9 @@ void setup() {
   stepperZ.setMaxSpeed(100); stepperZ.setAcceleration(50);
 
   // --- Inicializácia podľa enkodérov ---
-  float angleX = readEncoder(encoderPinX);
-  float angleY = readEncoder(encoderPinY);
-  float angleZ = readEncoder(encoderPinZ);
+  float angleX = readEncoder(encoderPinX, encoderOffsetX);
+  float angleY = readEncoder(encoderPinY, encoderOffsetY);
+  float angleZ = readEncoder(encoderPinZ, encoderOffsetZ);
 
   long stepsX = angleToSteps(angleX);
   long stepsY = angleToSteps(angleY);
@@ -52,7 +57,6 @@ void setup() {
   Serial.print("Y = "); Serial.print(angleY, 1); Serial.print("° / steps: "); Serial.println(stepsY);
   Serial.print("Z = "); Serial.print(angleZ, 1); Serial.print("° / steps: "); Serial.println(stepsZ);
 }
-
 
 void loop() {
   // Nezávislé ovládanie motorov
@@ -74,9 +78,9 @@ void loop() {
   }
 
   // Na ukážku: čítanie enkodérov
-  float angleX = readEncoder(encoderPinX);
-  float angleY = readEncoder(encoderPinY);
-  float angleZ = readEncoder(encoderPinZ);
+  float angleX = readEncoder(encoderPinX, encoderOffsetX);
+  float angleY = readEncoder(encoderPinY, encoderOffsetY);
+  float angleZ = readEncoder(encoderPinZ, encoderOffsetZ);
 
   // Odoslanie spätných hodnôt – voliteľné
   Serial.print("ENC_X: "); Serial.print(angleX, 1);
@@ -85,11 +89,19 @@ void loop() {
   delay(100); // aktualizačná perióda
 }
 
-// ----- Funkcia na čítanie analógového enkodéra -----
-float readEncoder(int pin) {
+// ----- Funkcia na čítanie analógového enkodéra s offsetom -----
+float readEncoder(int pin, float offset) {
   int value = analogRead(pin);
   int angle12bit = map(value, 0, 1023, 0, 4095);
   float angleDeg = (angle12bit / 4095.0) * 360.0;
+
+  // Aplikuj offset
+  angleDeg -= offset;
+
+  // Oprav rozsah na 0–360
+  if (angleDeg < 0) angleDeg += 360.0;
+  if (angleDeg >= 360.0) angleDeg -= 360.0;
+
   return angleDeg;
 }
 
@@ -140,4 +152,3 @@ long angleToSteps(float angleDeg) {
   if (angleDeg > 180.0) angleDeg -= 360.0;
   return (long)(angleDeg / degreesPerStep);
 }
-
