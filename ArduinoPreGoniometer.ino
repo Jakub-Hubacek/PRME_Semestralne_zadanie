@@ -16,9 +16,10 @@ const int encoderPinX = A1;
 const int encoderPinY = A2;
 
 // ----- Kalibračné offsety enkodérov -----
-const float encoderOffsetX = 292 ;   // <- nastav podľa tvojej domácej polohy
-const float encoderOffsetY = 259;
-const float encoderOffsetZ = 151;
+const float encoderOffsetX = 151 ;   // <- nastav podľa tvojej domácej polohy
+const float encoderOffsetY = 294;
+//const float encoderOffsetY = 0;
+const float encoderOffsetZ = 75;
 
 // ----- Konštanty -----
 const float stepsPerRevolution = 200.0; // prispôsobiť tvojmu motoru / prevodovke
@@ -90,20 +91,36 @@ void loop() {
 }
 
 // ----- Funkcia na čítanie analógového enkodéra s offsetom -----
-float readEncoder(int pin, float offset) {
-  int value = analogRead(pin);
-  int angle12bit = map(value, 0, 1023, 0, 4095);
-  float angleDeg = (angle12bit / 4095.0) * 360.0;
+//float readEncoder(int pin, float offset) {
+//  int value = analogRead(pin);
+//  int angle12bit = map(value, 0, 1023, 0, 4095);
+//  float angleDeg = (angle12bit / 4095.0) * 360.0;
 
   // Aplikuj offset
-  angleDeg -= offset;
+//  angleDeg -= offset;
 
   // Oprav rozsah na 0–360
-  if (angleDeg < 0) angleDeg += 360.0;
-  if (angleDeg >= 360.0) angleDeg -= 360.0;
+//  if (angleDeg < 0) angleDeg += 360.0;
+//  if (angleDeg >= 360.0) angleDeg -= 360.0;
 
-  return angleDeg;
+//  return angleDeg;
+//}
+
+
+// ----- Funkcia na čítanie analógového enkodéra s offsetom -----
+// výsledok: -180° … +180°
+float readEncoder(int pin, float offset) {
+  int value      = analogRead(pin);
+  float angleDeg = map(value, 0, 1023, 0, 4095) * 360.0 / 4095.0; // 0–360°
+  angleDeg      -= offset;                                         // zohľadni offset
+
+  // PREPIS: zabaľ do intervalu -180..180
+  if (angleDeg > 180.0)  angleDeg -= 360.0;   // 270° -> -90°
+  if (angleDeg <= -180.0) angleDeg += 360.0;  // -190° -> 170°
+
+  return angleDeg;                            // vracia priamo -180..180
 }
+
 
 // ----- Funkcia na spracovanie príkazu (napr. X45;Y-30;Z10;) -----
 void parseFullCommand(String cmd) {
