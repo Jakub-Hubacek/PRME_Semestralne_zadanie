@@ -22,9 +22,9 @@ const int encoderPinX = A1;
 const int encoderPinY = A2;
 
 // ofsety enkodérov (nastav podľa domácej polohy)
-const float encoderOffsetX = 151;
-const float encoderOffsetY = 294;
-const float encoderOffsetZ = 75;
+const float encoderOffsetX = 291.7; // Updated to match home position
+const float encoderOffsetY = 188.9; // Updated to match home position
+const float encoderOffsetZ = 310.7; // Updated to match home position
 
 // parametre krokových motorov
 const float stepsPerRevolution = 200.0;             // prispôsob podľa motora
@@ -40,16 +40,17 @@ AccelStepper stepperX(motorInterfaceType, stepPinX, dirPinX);
 AccelStepper stepperY(motorInterfaceType, stepPinY, dirPinY);
 AccelStepper stepperZ(motorInterfaceType, stepPinZ, dirPinZ);
 
-String inputString;                       // buffer sériového príkazu
+String inputString;  
+bool state = false;                     // buffer sériového príkazu
 
 // ─────────────────────────────  SETUP  ──────────────────────────────────
 void setup() {
   Serial.begin(115200);
-
+  pinMode(LED_BUILTIN, OUTPUT);
   // rýchlosť a akcelerácia – uprav, ak motory nestíhajú / sú pomalé
-  stepperX.setMaxSpeed(100);  stepperX.setAcceleration(50);
+  stepperX.setMaxSpeed(100);  stepperX.setAcceleration(200);
   stepperY.setMaxSpeed(400);  stepperY.setAcceleration(200);
-  stepperZ.setMaxSpeed(100);  stepperZ.setAcceleration(50);
+  stepperZ.setMaxSpeed(100);  stepperZ.setAcceleration(200);
 
   // vyčítaj reálne uhly z enkodérov a nastav softvérové nuly
   float angleX = readEncoder(encoderPinX, encoderOffsetX);
@@ -163,4 +164,6 @@ void parseFullCommand(String cmd) {
   if (!isnan(newAngle[2])) moveToAngle('Z', newAngle[2], stepperZ);
 
   Serial.println(F("Príkaz spracovaný."));
+  digitalWrite(LED_BUILTIN, state);
+  state = !state; // bliká LED
 }
